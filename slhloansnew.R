@@ -231,21 +231,167 @@ loans_finalv2$progress <- mutate(loans_finalv2, progress = currenttotalbalance /
 
 #Levenshtein Distance Algorithm for College Name Normalization
 
-univ <- read.csv("collegedetails.csv")
-desired_names <- tolower(as.character(univ$NAME))
-loans_finalv2$College <- tolower(as.character(loans_finalv2$College))
+#univ <- read.csv("collegedetails.csv")
+#desired_names <- tolower(as.character(univ$NAME))
+#loans_finalv2$College <- tolower(as.character(loans_finalv2$College))
 
-index <- numeric()
-value <- numeric()
-names <- character()
-for (i in 1:nrow(loans_finalv2)) {
-  differences <- levenshteinDist(desired_names, loans_finalv2$College[i])
-  #loans_finalv2$College[i] <- desired_names[which.min(differences)]
-  index[i] <- which.min(differences)
-  value[i] <- min(differences)
-  names[i] <- desired_names[which.min(differences)]
-}
-
+#Used to standardize college names
+#index <- numeric()
+#value <- numeric()
+#names <- character()
+#for (i in 1:nrow(loans_finalv2)) {
+#  differences <- levenshteinDist(desired_names, loans_finalv2$College[i])
+#  loans_finalv2$College[i] <- desired_names[which.min(differences)]
+#  index[i] <- which.min(differences)
+#  value[i] <- min(differences)
+#  names[i] <- desired_names[which.min(differences)]
+#}
+#
 #exporting university names to spot check??
-univnamecheck2 <- data.frame(desired_names, differences, loans_finalv2$College)
+#univnamecheck2 <- data.frame(names, differences, loans_finalv2$College)
 
+#Matched College Names Dataset
+cleanloans <- read.csv("slhloansclean.csv")
+
+cleanloans$univctrl <- univ[match(cleanloans$College, univ$NAME),4]
+cleanloans$univstate <- univ[match(cleanloans$College, univ$NAME),3]
+cleanloans$univobereg <- univ[match(cleanloans$College, univ$NAME),5]
+cleanloans$univlocale <- univ[match(cleanloans$College, univ$NAME),6]
+cleanloans$univenrprofile <- univ[match(cleanloans$College, univ$NAME),8]
+cleanloans$univmedical <- univ[match(cleanloans$College, univ$NAME),9]
+cleanloans$univhbcu <- univ[match(cleanloans$College, univ$NAME),10]
+cleanloans$univtribal <- univ[match(cleanloans$College, univ$NAME),11]
+cleanloans$univhsi <- univ[match(cleanloans$College, univ$NAME),12]
+cleanloans$univwomens <- univ[match(cleanloans$College, univ$NAME),14]
+cleanloans$univlibarts <- univ[match(cleanloans$College, univ$NAME),15]
+
+levels(cleanloans$Major)
+
+sort(table(cleanloans$Major))
+
+levels(cleanloans$Major) <- gsub(".*Law.*|.*Lawyer.*|.*attorney.*|.*JD.*|.*Juris Doctor.*|.*Paralegal.*", "Law", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Business.*|.*Financ.*|.*Account.*|.*Economic.*|.*Marketing.*|.*Human Resources.*", "Business", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Philosophy.*|.*Social.*|.*Politic.*|.*English.*|.*History.*|.*Sociology.*|.*International.*|.*General Studies.*|.*Fashion.*", "Liberal Arts", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Engineer.*", "Engineering", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Medicine.*|.*MD.*|.*Physician*|.*Doctor.*|.*Pharmacy.*|.*Medical.*|.*medicine.*", "Higher Medical Degree", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Teach.*|.*Education.*|.*Teach.*", "Education", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Technology.*|.*Computer.*|.*Systems.*", "Computer Science", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Communication.*|.*Relations.*", "Communications", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Science.*|.*Biology.*|.*Chemistry.*|.*Geology.*|.*Bioengineer.*|.*Physics.*|.*Mathematics.*", "Sciences", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Psychology.*", "Psychology", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub("Art|.*Graphic.*|.*Film.*|.*Drama.*|.*Music.*|.*Photography.*", "Arts", levels(cleanloans$Major))
+levels(cleanloans$Major) <- gsub(".*Nurs.*|.*nurs.*", "Nursing", levels(cleanloans$Major))
+
+OtherMajors <- !(cleanloans$Major %in% c("Business","Sciences", "Higher Medical Degree", "Engineering", "Liberal Arts", "Law", "Education", "Nursing", "Psychology", "Communications", "MBA"))
+
+cleanloans$Major[OtherMajors]<- "Other"
+
+cleanloans$Major <- factor(cleanloans$Major)
+
+levels(cleanloans$Major)
+
+
+cleanloans$Status[grep("forbearance",cleanloans$Status,ignore.case = TRUE)] <- "FBR"
+
+levels(factor(cleanloans$Status)) #prints number of unique levels in status column
+
+#further reducing duplicative levels
+cleanloans$Status[grep("deferment", cleanloans$Status,ignore.case = TRUE)] <- "DFR"
+cleanloans$Status[grep("repayment", cleanloans$Status,ignore.case = TRUE)] <- "RPM"
+cleanloans$Status[grep("grace", cleanloans$Status,ignore.case = TRUE)] <- "grace"
+cleanloans$Status[grep("default", cleanloans$Status,ignore.case = TRUE)] <- "default"
+
+levels(cleanloans$Status) <- gsub(".*DEFERRED.*", "DFR", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*DEFERMENT.*", "DFR", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*repayment.*", "RPM", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*Grace.*", "DFR", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*default.*", "Default", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*forbearance.*", "DFR", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*bankruptcy.*", "Default", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*delinq.*", "Default", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*rpm.*", "RPM", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*defer.*", "DFR", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*Forb.*", "DFR", ignore.case = TRUE, levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub(".*In school.*", "In School", ignore.case = TRUE, levels(cleanloans$Status))
+
+
+#levels(cleanloans$Status) <- gsub("DEFERRED", "DFR", levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub("LOAN ORIGINATED", "IN SCHOOL", levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub("FBR", "DFR", levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub("grace", "DFR", levels(cleanloans$Status))
+levels(cleanloans$Status) <- gsub("DFR", "DFR/GRC", levels(cleanloans$Status))
+
+levels(factor(cleanloans$Status)) #checking number of levels now
+
+
+levels(cleanloans$Profession)
+
+sort(table(cleanloans$Profession))
+
+levels(cleanloans$Profession) <- gsub(".*Lawyer.*|.*attorney.*", "Attorney", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Engineer.*", "Engineer", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Teacher.*", "Teacher", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Nurse.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Doctor.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Therapist.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Physician.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Dentist.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Dental.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Physician's.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Psychologist.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Psychiatrist.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Medical.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Chiropractor.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Pharmacist.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Nursing.*", "Doctor/Nurse/Pharmacist", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Computer.*", "Computer/Tech", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Developer.*", "Computer/Tech", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*IT.*", "Computer/Tech", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Teacher.*", "Teacher", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Librarian.*", "Teacher", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Professor.*", "Teacher", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Accounting.*", "Accountant", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Student.*|.*Resident.*|.*Researcher.*|.*student.*", "Student", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Designer.*|.*Graphic.*", "Designer", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Business.*|.*Manager.*|.*Marketing.*|.*Financial.*|.*Analyst.*|.*Insurance.*|.*Consultant*.|.*Resources.*|.*Consulting.*", "General Business", levels(cleanloans$Profession))
+levels(cleanloans$Profession) <- gsub(".*Retail.*|.*Cashier.*", "Retail", levels(cleanloans$Profession))
+OtherProfessions <- !(cleanloans$Profession %in% c("Doctor/Nurse/Pharmacist","General Business", "Engineer", "Attorney", "Teacher", "Computer/Tech", "Accountant", "Student", "Designer", "Retail"))
+
+cleanloans$Profession[OtherProfessions]<- "Other"
+
+cleanloans$Profession <- factor(cleanloans$Profession)
+
+levels(factor(cleanloans$Profession))
+
+#removing servicer column - unnecessary for predicting the chance a borrower will default
+cleanloans$Servicer <- NULL
+
+#adding a new calculated column = difference between original and current principal
+cleanloans <- mutate(cleanloans, Difference=Current.Principal-Original.Principal)
+
+summary(cleanloans$Difference)
+
+#Pulling records where difference is positive, and rate is >0
+cleanloans <- filter(cleanloans, Difference>=0&Rate>0)
+
+#str(cleanloans)
+
+#deleting variables that are null or useless
+cleanloans <- select(cleanloans, -(Created.At:Loan.ID..),-X)
+
+#getting rid of records where original principal is 0
+cleanloans <- filter(cleanloans, Original.Principal>0)
+
+#Lubridating the date field from character to true date field
+cleanloans$Loan.Disbursement.Date <- mdy(cleanloans$Loan.Disbursement.Date)
+
+#Adding new column for each user's original balance sum
+cleanloans$Original.Principal[is.na(cleanloans$Original.Principal)] <- 0
+cleanloans <- cleanloans %>% group_by(User.ID..) %>% mutate(origtotalbalance=sum(Original.Principal))
+#Adding new column for each user's current balance sum
+cleanloans$Current.Principal[is.na(cleanloans$Current.Principal)] <- 0
+cleanloans <- cleanloans %>% group_by(User.ID..) %>% mutate(currenttotalbalance=sum(Current.Principal))%>% mutate(origtotalbalance=sum(Original.Principal))
+
+
+
+#setup column for is current principal > original principal
