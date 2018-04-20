@@ -3,15 +3,15 @@ title: Making Sense of $1.3T in Student Loan Debt - An Analysis of Student Loan 
   Users'  and Predictive Default Model
 author: "Trevor Ford"
 date: "February 17, 2018"
-output:
-  html_document:
+output: 
+  github_document:
     toc: yes
     toc_depth: '3'
   pdf_document:
     number_sections: yes
     toc: yes
     toc_depth: 3
-  output: github_document
+  
 ---
 ---
 
