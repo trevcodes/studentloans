@@ -726,7 +726,8 @@ model
     ## Default        25         3  0.10714286
     ## Repayment       1        41  0.02380952
 
-Our model has a
+Our model has an accuracy of 89.3% in predicting when a loan is expected to be in default.
+Our model has an accuracy of 97.6% in predicting when a loan is expected to be in repayment.
 
 Out-of-bag Error and ROC Curve
 ------------------------------
